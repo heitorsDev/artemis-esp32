@@ -2,109 +2,148 @@
 #include <WebSocketsServer.h>
 #include <WebServer.h>
 
-const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE html>
+const char index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <style>
+    button {
+
+      user-select: none;
+    }
+  </style>
 </head>
+
 <body>
-<input type="text" id="ipInput" placeholder="IP" />
-<button id="connectButton" onclick="connectWebSocket()">Connect</button>
-<div id="connectStatus"></div>
-<button id="msgButton" onclick="sendMessage()">Send Message</button>
-<script>
-const ipInput = document.getElementById("ipInput");
-const connectButton = document.getElementById("connectButton");
-const connectStatus = document.getElementById("connectStatus");
-let ws = null;
+  <button id="connectButton" onclick="connectWebSocket()">Connect</button>
+  <div id="connectStatus"></div>
+  <div>
+    <button id="up1" ontouchstart="upPressed()" ontouchend="upReleased()" onclick="preventDefault(event)">UP</button>
+    <button id="down1" ontouchstart="downPressed()" ontouchend="downReleased()"
+      onclick="preventDefault(event)">DOWN</button>
+    <button id="left1" ontouchstart="leftPressed()" ontouchend="leftReleased()"
+      onclick="preventDefault(event)">LEFT</button>
+    <button id="right1" ontouchstart="rightPressed()" ontouchend="rightReleased()"
+      onclick="preventDefault(event)">RIGHT</button>
+  </div>
+  <script>
+    const ipInput = document.getElementById("ipInput");
+    const connectButton = document.getElementById("connectButton");
+    const connectStatus = document.getElementById("connectStatus");
+    let ws = null;
 
-function connectWebSocket() {
-  ws = new WebSocket(`ws://${ipInput.value}`);
-  ws.onopen = () => {
-    connectStatus.innerHTML = "connected";
-  };
-  ws.onclose = () => {
-    connectStatus.innerHTML = "disconnected";
-  };
-}
+    function connectWebSocket() {
+      ws = new WebSocket(`ws://192.168.4.1:80`);
+      ws.onopen = () => {
+        connectStatus.innerHTML = "connected";
+      };
+      ws.onclose = () => {
+        connectStatus.innerHTML = "disconnected";
+      };
+    }
 
-const msgButton = document.getElementById("msgButton");
+    let keys = {};
 
-let keys = {};
-let controls = {
-  upDown: 0,
-  leftRight: 0,
-  message: ""
-};
+    let controls = {
+      upDown: 0,
+      leftRight: 0,
+    };
 
-document.addEventListener("keydown", function (event) {
-  if (!keys[event.code]) {
-    keys[event.code] = true;
-  
-      //input
-    if (event.code === "ArrowUp") {
+    document.addEventListener("keydown", function (event) {
+      if (!keys[event.code]) {
+        keys[event.code] = true;
+
+        if (event.code === "ArrowUp") {
+          controls.upDown++;
+        }
+        if (event.code === "ArrowDown") {
+          controls.upDown--;
+        }
+
+        console.log(controls.upDown);
+      }
+    });
+
+    document.addEventListener("keyup", function (event) {
+      if (keys[event.code]) {
+        keys[event.code] = false;
+
+        if (event.code === "ArrowUp") {
+          controls.upDown--;
+        }
+        if (event.code === "ArrowDown") {
+          controls.upDown++;
+        }
+
+        console.log(controls.upDown);
+      }
+    });
+
+
+    function upPressed() {
+
       controls.upDown++;
-    }
-    if (event.code === "ArrowDown") {
-      controls.upDown--;
+      sendInput();
     }
 
-    if (event.code === "ArrowRight") {
-      controls.leftRight++;
-    }
-    if (event.code === "ArrowLeft") {
-      controls.leftRight--;
-    }
-    sendInput()
-  }
-});
-
-document.addEventListener("keyup", function (event) {
-  if (keys[event.code]) {
-    keys[event.code] = false;
-    
-    //reverse input values
-    if (event.code === "ArrowUp") {
+    function upReleased() {
       controls.upDown--;
+      sendInput();
     }
-    if (event.code === "ArrowDown") {
+
+    function downPressed() {
+      controls.upDown--;
+      sendInput();
+    }
+
+    function downReleased() {
       controls.upDown++;
+      sendInput();
     }
 
-    if (event.code === "ArrowRight") {
+    function leftPressed() {
       controls.leftRight--;
+      sendInput();
     }
-    if (event.code === "ArrowLeft") {
+
+    function leftReleased() {
       controls.leftRight++;
+      sendInput();
     }
-    sendInput()
-  }
-});
 
-function sendMessage() {
-  const message = prompt("Enter your message:");
-  if (message !== null) {
-    controls.message = message;
-    sendInput();
-  }
-}
+    function rightPressed() {
+      controls.leftRight++;
+      sendInput();
+    }
 
-function sendInput() {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(controls));
-  }
-}
-</script>
+    function rightReleased() {
+      controls.leftRight--;
+      sendInput();
+    }
+
+    function sendInput() {
+      console.log(controls)
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(controls));
+      }
+    }
+
+    function preventDefault(event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  </script>
 </body>
+
 </html>
 )rawliteral";
 
 
 const char *ssid = "artemis";
-const char *password = "12345678";
+const char *password = "artemis1";
 
 WebSocketsServer webSocket = WebSocketsServer(80);
 WebServer clientServer(81);
@@ -120,9 +159,9 @@ void setup() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
-clientServer.on("/", HTTP_GET, []() {
-  clientServer.send_P(200, "text/html", index_html);
-});
+  clientServer.on("/", HTTP_GET, []() {
+    clientServer.send_P(200, "text/html", index_html);
+  });
   clientServer.begin();
 }
 
