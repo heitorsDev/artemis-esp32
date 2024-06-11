@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <input type="text" id="ipInput" placeholder="IP" />
+    <button id="connectButton" onclick="connectWebSocket()">Connect</button>
+    <div id="connectStatus"></div>
+    <button id="msgButton" onclick="sendMessage()">sendmsg</button>
+    <script>
+      const ipInput = document.getElementById("ipInput");
+      const connectButton = document.getElementById("connectButton");
+      const connectStatus = document.getElementById("connectStatus");
+      let ws = null;
+
+      function connectWebSocket() {
+        ws = new WebSocket(`ws://${ipInput.value}`);
+        ws.onopen = () => {
+          connectStatus.innerHTML = "connected";
+        };
+        ws.onclose = () => {
+          connectStatus.innerHTML = "disconnected";
+        };
+      }
+
+      const msgButton = document.getElementById("msgButton");
+
+      let keys = {};
+      let controls = {
+        upDown: 0,
+        leftRight: 0,
+      };
+
+      document.addEventListener("keydown", function (event) {
+        if (!keys[event.code]) {
+          keys[event.code] = true;
+        
+            //input
+          if (event.code === "ArrowUp") {
+            controls.upDown++;
+          }
+          if (event.code === "ArrowDown") {
+            controls.upDown--;
+          }
+
+          if (event.code === "ArrowRight") {
+            controls.leftRight++;
+          }
+          if (event.code === "ArrowLeft") {
+            controls.leftRight--;
+          }
+          sendInput()
+        }
+      });
+
+      document.addEventListener("keyup", function (event) {
+        if (keys[event.code]) {
+          keys[event.code] = false;
+          
+          //reverse input values
+          if (event.code === "ArrowUp") {
+            controls.upDown--;
+          }
+          if (event.code === "ArrowDown") {
+            controls.upDown++;
+          }
+
+          if (event.code === "ArrowRight") {
+            controls.leftRight--;
+          }
+          if (event.code === "ArrowLeft") {
+            controls.leftRight++;
+          }
+          sendInput()
+        }
+      });
+      function sendInput() {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(controls));
+        }
+      }
+    </script>
+  </body>
+</html>
