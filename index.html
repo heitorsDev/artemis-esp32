@@ -25,11 +25,15 @@
     <button id="right1" ontouchstart="rightPressed()" ontouchend="rightReleased()"
       onclick="preventDefault(event)">RIGHT</button>
   </div>
+  <div id="received">
+    none
+  </div>
   <script>
     const ipInput = document.getElementById("ipInput");
     const connectButton = document.getElementById("connectButton");
     const connectStatus = document.getElementById("connectStatus");
     let ws = null;
+    const received = document.getElementById("received")
 
     function connectWebSocket() {
       ws = new WebSocket(`ws://192.168.4.1:80`);
@@ -39,6 +43,10 @@
       ws.onclose = () => {
         connectStatus.innerHTML = "disconnected";
       };
+      ws.onmessage = (event) => {
+        console.log(event.data)
+        received.innerHTML = event.data
+      }
     }
 
     let keys = {};

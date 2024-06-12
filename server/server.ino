@@ -2,7 +2,9 @@
 #include <WebSocketsServer.h>
 #include <WebServer.h>
 
-const char index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
+
+const char index_html[] PROGMEM = R"rawliteral(
+  <!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -29,11 +31,15 @@ const char index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
     <button id="right1" ontouchstart="rightPressed()" ontouchend="rightReleased()"
       onclick="preventDefault(event)">RIGHT</button>
   </div>
+  <div id="received">
+    none
+  </div>
   <script>
     const ipInput = document.getElementById("ipInput");
     const connectButton = document.getElementById("connectButton");
     const connectStatus = document.getElementById("connectStatus");
     let ws = null;
+    const received = document.getElementById("received")
 
     function connectWebSocket() {
       ws = new WebSocket(`ws://192.168.4.1:80`);
@@ -43,6 +49,10 @@ const char index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
       ws.onclose = () => {
         connectStatus.innerHTML = "disconnected";
       };
+      ws.onmessage = (event) => {
+        console.log(event.data)
+        received.innerHTML = event.data
+      }
     }
 
     let keys = {};
@@ -143,12 +153,13 @@ const char index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
 
 
 const char *ssid = "artemis";
-const char *password = "artemis1";
+const char *password = "artemis2";
 
 WebSocketsServer webSocket = WebSocketsServer(80);
 WebServer clientServer(81);
 
 void setup() {
+  pinMode(servoPin, OUTPUT);
   Serial.begin(9600);
   WiFi.softAP(ssid, password);
 
@@ -168,6 +179,7 @@ void setup() {
 void loop() {
   clientServer.handleClient();
   webSocket.loop();
+  analogWrite(servoPin, 255);
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
@@ -183,7 +195,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
       }
     case WStype_TEXT:
       Serial.printf("[%u] Received text: %s\n", num, payload);
-      webSocket.sendTXT(num, "Message received");
+      webSocket.sendTXT(num, payload);
       break;
   }
 }
